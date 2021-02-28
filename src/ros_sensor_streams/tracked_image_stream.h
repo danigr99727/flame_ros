@@ -64,6 +64,22 @@ class TrackedImageStream final  {
     cv::Mat3b img; // RGB image.
   };
 
+struct Img {
+    uint32_t id; // Image ID.
+    double time; // Timestamp.
+    //Eigen::Quaternionf quat; // Orientation as quaternion.
+    //Eigen::Vector3f trans; // Translsation.
+    cv::Mat3b img; // RGB image.
+};
+
+struct Pose {
+    //uint32_t id; // Image ID.
+    double time; // Timestamp.
+    Eigen::Quaternionf quat; // Orientation as quaternion.
+    Eigen::Vector3f trans; // Translsation.
+    //cv::Mat3b img; // RGB image.
+};
+
   /**
    * @brief Constructor for ROS-calibrated image stream.
    *
@@ -99,9 +115,13 @@ class TrackedImageStream final  {
   TrackedImageStream(const TrackedImageStream&& rhs) = delete;
   TrackedImageStream& operator=(const TrackedImageStream&& rhs) = delete;
 
-  ThreadSafeQueue<Frame>& queue() {
-    return queue_;
+  ThreadSafeQueue<Img>& img_queue() {
+    return image_queue_;
   }
+
+ThreadSafeQueue<Pose>& pose_queue() {
+    return pose_queue_;
+}
 
   /**
    * \brief Returns true if stream is initialized.
@@ -158,6 +178,8 @@ class TrackedImageStream final  {
   void callback(const sensor_msgs::Image::ConstPtr& rgb,
                 const sensor_msgs::CameraInfo::ConstPtr& info);
 
+  void tfCallback(const geometry_msgs::TransformStamped::ConstPtr& tf);
+
   ros::NodeHandle& nh_;
 
   bool inited_;
@@ -180,8 +202,11 @@ class TrackedImageStream final  {
 
   std::shared_ptr<image_transport::ImageTransport> image_transport_;
   image_transport::CameraSubscriber cam_sub_;
+  ros::Subscriber transform_sub_;
 
-  ThreadSafeQueue<Frame> queue_;
+  //ThreadSafeQueue<Frame> queue_;
+  ThreadSafeQueue<Img> image_queue_;
+  ThreadSafeQueue<Pose> pose_queue_;
 };
 
 }  // namespace ros_sensor_streams

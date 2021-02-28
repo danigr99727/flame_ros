@@ -57,7 +57,9 @@ TrackedImageStream::TrackedImageStream(const std::string& world_frame_id,
     tf_buffer_(),
     image_transport_(nullptr),
     cam_sub_(),
-    queue_(queue_size) {
+    transform_sub_(),
+    image_queue_(100),
+    pose_queue_(queue_size){
   // Double check intrinsics matrix.
   if (K_(0, 0) <= 0) {
     ROS_ERROR("Camera intrinsics matrix is probably invalid!\n");
@@ -73,7 +75,9 @@ TrackedImageStream::TrackedImageStream(const std::string& world_frame_id,
                                                &TrackedImageStream::callback,
                                                this);
 
-  // Set up tf.
+  transform_sub_ = nh.subscribe("/transform_s20", 50, &TrackedImageStream::tfCallback, this);
+
+    // Set up tf.
   tf_listener_.reset(new tf2_ros::TransformListener(tf_buffer_));
 
   return;
@@ -97,14 +101,17 @@ TrackedImageStream::TrackedImageStream(const std::string& world_frame_id,
     tf_buffer_(),
     image_transport_(nullptr),
     cam_sub_(),
-    queue_(queue_size) {
+    transform_sub_(),
+    image_queue_(100),
+    pose_queue_(queue_size) {
   // Subscribe to topics.
   image_transport::ImageTransport it_(nh_);
   image_transport_.reset(new image_transport::ImageTransport(nh_));
 
-  cam_sub_ = image_transport_->subscribeCamera("image", 10,
+  cam_sub_ = image_transport_->subscribeCamera("image", 50,
                                                &TrackedImageStream::callback,
                                                this);
+  transform_sub_ = nh.subscribe("/transform_s20", 50, &TrackedImageStream::tfCallback, this);
 
   // Set up tf.
   tf_listener_.reset(new tf2_ros::TransformListener(tf_buffer_));
@@ -167,36 +174,39 @@ void TrackedImageStream::callback(const sensor_msgs::Image::ConstPtr& rgb_msg,
     rgb = rgb_undistorted;
   }
 
-  // Get pose of camera.
-  geometry_msgs::TransformStamped tf;
-  try {
-    // Need to remove leading "/" if it exists.
-    std::string rgb_frame_id = rgb_msg->header.frame_id;
-    if (rgb_frame_id[0] == '/') {
-      rgb_frame_id = rgb_frame_id.substr(1, rgb_frame_id.size()-1);
-    }
+  Img img;
+  img.id = rgb_msg->header.seq;
+  img.time = rgb_msg->header.stamp.toSec();
+  //frame.quat = pose.unit_quaternion();
+  //frame.trans = pose.translation();
+  img.img = rgb;
 
-    tf = tf_buffer_.lookupTransform(world_frame_id_, rgb_frame_id,
-                                    ros::Time(rgb_msg->header.stamp),
-                                    ros::Duration(1.0/10));
-  } catch (tf2::TransformException &ex) {
-    ROS_ERROR("%s", ex.what());
-    return;
+  if(!image_queue_.push(img)){
+      image_queue_.pop();
+      image_queue_.push(img);
   }
 
-  Sophus::SE3f pose;
-  tfToSophusSE3<float>(tf.transform, &pose);
-
-  Frame frame;
-  frame.id = rgb_msg->header.seq;
-  frame.time = rgb_msg->header.stamp.toSec();
-  frame.quat = pose.unit_quaternion();
-  frame.trans = pose.translation();
-  frame.img = rgb;
-
-  queue_.push(frame);
-
   return;
+}
+
+void TrackedImageStream::tfCallback(const geometry_msgs::TransformStamped::ConstPtr& tf) {
+    ROS_DEBUG("Received transform data!");
+    std::cout<<"recieving transform..."<<std::endl;
+
+    Sophus::SE3f pose;
+    tfToSophusSE3<float>(tf->transform, &pose);
+
+    Pose POSE;
+    //img.id = rgb_msg->header.seq;
+    //POSE.id = tf->header.seq;
+    POSE.time = tf->header.stamp.toSec();
+    POSE.quat = pose.unit_quaternion();
+    POSE.trans = pose.translation();
+    //img.img = rgb;
+
+    pose_queue_.push(POSE);
+
+    return;
 }
 
 }  // namespace ros_sensor_streams

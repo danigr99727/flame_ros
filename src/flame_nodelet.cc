@@ -102,6 +102,9 @@ class FlameNodelet : public nodelet::Nodelet {
  public:
   // // Convenience alias.
   using Frame = ros_sensor_streams::TrackedImageStream::Frame;
+  using Pose = ros_sensor_streams::TrackedImageStream::Pose;
+  using Img = ros_sensor_streams::TrackedImageStream::Img;
+
 
 #ifdef FLAME_WITH_FLA
   enum Status {
@@ -424,10 +427,10 @@ class FlameNodelet : public nodelet::Nodelet {
         frame_id = frame_id.substr(1, frame_id.size()-1);
       }
       tf = tf_buffer_.lookupTransform(camera_world_frame_id_, frame_id,
-                                      ros::Time(msg->header.stamp),
+                                      ros::Time(msg->header.stamp), //there's probably an issue in that the image is passed to flame at the same time that it is passed to orb_slam... not giving orb_slam any time to compute the transform...
                                       ros::Duration(1.0/15));
     } catch (tf2::TransformException &ex) {
-      ROS_ERROR("%s", ex.what());
+      ROS_ERROR("Error after transform to camera_world: %s", ex.what());
       return;
     }
 
@@ -445,7 +448,7 @@ class FlameNodelet : public nodelet::Nodelet {
                                       ros::Time(msg->header.stamp),
                                       ros::Duration(1.0/15));
     } catch (tf2::TransformException &ex) {
-      ROS_ERROR("%s", ex.what());
+      ROS_ERROR("Error after transform wrt body:  %s", ex.what());
       return;
     }
 
@@ -533,11 +536,13 @@ class FlameNodelet : public nodelet::Nodelet {
       stats_.tick("main");
 
       // Wait for queue to have items.
-      stats_.set("queue_size", input_->queue().size());
-      stats_.tick("waiting");
-      std::unique_lock<std::recursive_mutex> lock(input_->queue().mutex());
-      input_->queue().non_empty().wait(lock, [this](){
-          return (input_->queue().size() > 0);
+      stats_.set("pose_queue_size", input_->pose_queue().size());
+        stats_.set("image_queue_size", input_->img_queue().size());
+
+        stats_.tick("waiting");
+      std::unique_lock<std::recursive_mutex> lock(input_->pose_queue().mutex());
+      input_->pose_queue().non_empty().wait(lock, [this](){
+          return (input_->pose_queue().size() > 0);
         });
       lock.unlock();
       stats_.tock("waiting");
@@ -547,12 +552,25 @@ class FlameNodelet : public nodelet::Nodelet {
                         static_cast<int>(stats_.stats("queue_size")));
 
       // Grab the first item in the queue.
-      Frame frame = input_->queue().front();
-      input_->queue().pop();
+      Pose pose =  input_->pose_queue().front();
+      input_->pose_queue().pop();
+      Img img = input_->img_queue().front();
+      input_->img_queue().pop();
+      std::cout<<img.time<<" "<<pose.time<<std::endl;
+      while (pose.time != img.time) {
+          std::cout<<"discarding image..."<<std::endl;
+          if (input_->img_queue().size()==0){
+          std::cout<<"no img found for new pose!"<<std::endl;
+          break;
+        }
+        img = input_->img_queue().front();
+        input_->img_queue().pop();
+      }
+
       if ((pfs_inited_) && (num_imgs_ % subsample_factor_ == 0)) {
         // Eat data.
-        processFrame(frame.id, frame.time, Sophus::SE3f(frame.quat, frame.trans),
-                     frame.img);
+        processFrame(img.id, img.time, Sophus::SE3f(pose.quat, pose.trans),
+                     img.img);
       }
 
       /*==================== Timing stuff ====================*/
@@ -606,12 +624,12 @@ class FlameNodelet : public nodelet::Nodelet {
       }
 
       publishFlameNodeletStats(nodelet_stats_pub_,
-                               frame.id, frame.time,
+                               img.id, img.time,
                                stats_.stats(), stats_.timings());
 
       NODELET_INFO_COND(!params_.debug_quiet,
                         "FlameNodelet/main(%i/%u) = %4.1fms/%.1fHz (%.1fHz)\n",
-                        num_imgs_, frame.id, stats_.timings("main"),
+                        num_imgs_, img.id, stats_.timings("main"),
                         stats_.stats("fps_max"), stats_.stats("fps"));
 
       num_imgs_++;

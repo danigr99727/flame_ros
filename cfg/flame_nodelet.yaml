@@ -1,7 +1,7 @@
 # FlameNodelet params.
 input:
-  camera_frame_id: openni_rgb_optical_frame
-  camera_world_frame_id: camera_world
+  camera_frame_id: s20cam
+  camera_world_frame_id: map
   subsample_factor: 1 # Process one out of this many images.
   poseframe_subsample_factor: 6 # Create pf every this number of images. Ignored if use_poseframe_updates is true.
   use_poseframe_updates: False # Listen to updates for poseframe poses.
@@ -12,7 +12,7 @@ output:
   quiet: false # Turn off terminal output.
   mesh: true # Publish mesh as pcl_msgs/PolygonMesh.
   idepthmap: false # Publish idepthmap as sensor_msgs/Image.
-  depthmap: false # Publish depthmap as sensor_msgs/Image.
+  depthmap: true # Publish depthmap as sensor_msgs/Image.
   cloud: false # Publish pointcloud sensor_msgs/PointCloud2. Prefer mesh or depthmap (in that order).
   features: false # Publish raw features points as sensors_msgs/Image.
   stats: true # Publish statistics message.

@@ -83,12 +83,14 @@ ASLRGBDOfflineStream::ASLRGBDOfflineStream(ros::NodeHandle& nh,
     it_(nh),
     rgb_pub_(),
     depth_pub_() {
+    std::cout<<"here"<<std::endl;
   bfs::path depth_path_fs(depth_path);
   if (bfs::exists(depth_path_fs)) {
     // Read in depth data if it exists.
     depth_data_ = std::move(dataset_utils::asl::
                             Dataset<dataset_utils::asl::FileData>(depth_path));
   }
+    std::cout<<"here"<<std::endl;
 
   // Set calibration information.
   width_ = rgb_data_.metadata()["resolution"][0].as<uint32_t>();
@@ -96,15 +98,18 @@ ASLRGBDOfflineStream::ASLRGBDOfflineStream(ros::NodeHandle& nh,
   cinfo_.width = width_;
   cinfo_.height = height_;
   cinfo_.distortion_model = "plumb_bob";
+    std::cout<<"here"<<std::endl;
 
   float fu = rgb_data_.metadata()["intrinsics"][0].as<float>();
   float fv = rgb_data_.metadata()["intrinsics"][1].as<float>();
   float cu = rgb_data_.metadata()["intrinsics"][2].as<float>();
   float cv = rgb_data_.metadata()["intrinsics"][3].as<float>();
+    std::cout<<"here"<<std::endl;
 
   cinfo_.K = {fu, 0, cu,
               0, fv, cv,
               0, 0, 1};
+    std::cout<<"here"<<std::endl;
 
   K_(0, 0) = fu;
   K_(0, 2) = cu;
@@ -114,14 +119,17 @@ ASLRGBDOfflineStream::ASLRGBDOfflineStream(ros::NodeHandle& nh,
   cinfo_.P = {fu, 0, cu, 0,
               0, fv, cv, 0,
               0, 0, 1, 0};
+    std::cout<<"here"<<std::endl;
 
   float k1 = rgb_data_.metadata()["distortion_coefficients"][0].as<float>();
   float k2 = rgb_data_.metadata()["distortion_coefficients"][1].as<float>();
   float p1 = rgb_data_.metadata()["distortion_coefficients"][2].as<float>();
   float p2 = rgb_data_.metadata()["distortion_coefficients"][3].as<float>();
   float k3 = 0.0f;
+    std::cout<<"here"<<std::endl;
 
   cinfo_.D = {k1, k2, p1, p2, k3};
+    std::cout<<"here"<<std::endl;
 
   if (!depth_data_.path().empty()) {
     intensity_to_depth_factor_ = depth_data_.metadata()["depth_scale_factor"].as<float>();
@@ -134,20 +142,24 @@ ASLRGBDOfflineStream::ASLRGBDOfflineStream(ros::NodeHandle& nh,
       depth_pub_ = it_.advertiseCamera("/" + camera_name_ + "/depth_registered/image_rect", 5);
     }
   }
+    std::cout<<"hereLAST"<<std::endl;
 
   associateData();
+    std::cout<<"hereLAST2"<<std::endl;
 
   // Extract transform of pose sensor in body frame.
   Eigen::Matrix<double, 4, 4, Eigen::RowMajor> T_pose_in_body;
   du::readMatrix(pose_data_.metadata(), "T_BS", 4, 4, T_pose_in_body.data());
   q_pose_in_body_ = Eigen::Quaterniond(T_pose_in_body.block<3, 3>(0, 0));
   t_pose_in_body_ = T_pose_in_body.block<3, 1>(0, 3);
+    std::cout<<"here"<<std::endl;
 
   // Extract transform of camera in body frame.
   Eigen::Matrix<double, 4, 4, Eigen::RowMajor> T_cam_in_body;
   du::readMatrix(rgb_data_.metadata(), "T_BS", 4, 4, T_cam_in_body.data());
   q_cam_in_body_ = Eigen::Quaterniond(T_cam_in_body.block<3, 3>(0, 0));
   t_cam_in_body_ = T_cam_in_body.block<3, 1>(0, 3);
+    std::cout<<"here"<<std::endl;
 
   return;
 }

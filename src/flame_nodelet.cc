@@ -508,7 +508,9 @@ class FlameNodelet : public nodelet::Nodelet {
    * \brief Main processing loop.
    */
   void main() {
-    // Wait until input is initialized.
+      std::cout<<"hereA"<<std::endl;
+
+      // Wait until input is initialized.
     NODELET_INFO_COND(!params_.debug_quiet,
                       "FlameNodelet: Waiting on calibration...\n");
     while (!input_->inited()) {

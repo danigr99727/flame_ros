@@ -102,9 +102,6 @@ class FlameNodelet : public nodelet::Nodelet {
  public:
   // // Convenience alias.
   using Frame = ros_sensor_streams::TrackedImageStream::Frame;
-  using Pose = ros_sensor_streams::TrackedImageStream::Pose;
-  using Img = ros_sensor_streams::TrackedImageStream::Img;
-
 
 #ifdef FLAME_WITH_FLA
   enum Status {
@@ -536,14 +533,13 @@ class FlameNodelet : public nodelet::Nodelet {
       stats_.tick("main");
 
       // Wait for queue to have items.
-      stats_.set("pose_queue_size", input_->pose_queue().size());
-        stats_.set("image_queue_size", input_->img_queue().size());
+      stats_.set("queue", input_->queue().size());
 
-        stats_.tick("waiting");
-      std::unique_lock<std::recursive_mutex> lock(input_->pose_queue().mutex());
-      input_->pose_queue().non_empty().wait(lock, [this](){
-          return (input_->pose_queue().size() > 0);
-        });
+      stats_.tick("waiting");
+      std::unique_lock<std::recursive_mutex> lock(input_->queue().mutex());
+      input_->queue().non_empty().wait(lock, [this](){
+          return (input_->queue().size() > 0);
+      });
       lock.unlock();
       stats_.tock("waiting");
       NODELET_INFO_COND(!params_.debug_quiet,
@@ -552,25 +548,13 @@ class FlameNodelet : public nodelet::Nodelet {
                         static_cast<int>(stats_.stats("queue_size")));
 
       // Grab the first item in the queue.
-      Pose pose =  input_->pose_queue().front();
-      input_->pose_queue().pop();
-      Img img = input_->img_queue().front();
-      input_->img_queue().pop();
-      std::cout<<img.time<<" "<<pose.time<<std::endl;
-      while (pose.time != img.time) {
-          std::cout<<"discarding image..."<<std::endl;
-          if (input_->img_queue().size()==0){
-          std::cout<<"no img found for new pose!"<<std::endl;
-          break;
-        }
-        img = input_->img_queue().front();
-        input_->img_queue().pop();
-      }
+      Frame frame = input_->queue().front();
+      input_->queue().pop();
 
       if ((pfs_inited_) && (num_imgs_ % subsample_factor_ == 0)) {
         // Eat data.
-        processFrame(img.id, img.time, Sophus::SE3f(pose.quat, pose.trans),
-                     img.img);
+          processFrame(frame.id, frame.time, Sophus::SE3f(frame.quat, frame.trans),
+                       frame.img);
       }
 
       /*==================== Timing stuff ====================*/
@@ -624,12 +608,12 @@ class FlameNodelet : public nodelet::Nodelet {
       }
 
       publishFlameNodeletStats(nodelet_stats_pub_,
-                               img.id, img.time,
+                               frame.id, frame.time,
                                stats_.stats(), stats_.timings());
 
       NODELET_INFO_COND(!params_.debug_quiet,
                         "FlameNodelet/main(%i/%u) = %4.1fms/%.1fHz (%.1fHz)\n",
-                        num_imgs_, img.id, stats_.timings("main"),
+                        num_imgs_, frame.id, stats_.timings("main"),
                         stats_.stats("fps_max"), stats_.stats("fps"));
 
       num_imgs_++;

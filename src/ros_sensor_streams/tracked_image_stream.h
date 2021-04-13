@@ -29,6 +29,11 @@
 
 #include <image_transport/image_transport.h>
 #include <image_transport/camera_subscriber.h>
+#include <message_filters/subscriber.h>
+#include <message_filters/sync_policies/exact_time.h>
+#include <message_filters/sync_policies/approximate_time.h>
+
+#include <message_filters/time_synchronizer.h>
 
 #include <tf2_ros/transform_listener.h>
 
@@ -63,22 +68,6 @@ class TrackedImageStream final  {
     Eigen::Vector3f trans; // Translsation.
     cv::Mat3b img; // RGB image.
   };
-
-struct Img {
-    uint32_t id; // Image ID.
-    double time; // Timestamp.
-    //Eigen::Quaternionf quat; // Orientation as quaternion.
-    //Eigen::Vector3f trans; // Translsation.
-    cv::Mat3b img; // RGB image.
-};
-
-struct Pose {
-    //uint32_t id; // Image ID.
-    double time; // Timestamp.
-    Eigen::Quaternionf quat; // Orientation as quaternion.
-    Eigen::Vector3f trans; // Translsation.
-    //cv::Mat3b img; // RGB image.
-};
 
   /**
    * @brief Constructor for ROS-calibrated image stream.
@@ -115,13 +104,9 @@ struct Pose {
   TrackedImageStream(const TrackedImageStream&& rhs) = delete;
   TrackedImageStream& operator=(const TrackedImageStream&& rhs) = delete;
 
-  ThreadSafeQueue<Img>& img_queue() {
-    return image_queue_;
+  ThreadSafeQueue<Frame>& queue() {
+    return queue_;
   }
-
-ThreadSafeQueue<Pose>& pose_queue() {
-    return pose_queue_;
-}
 
   /**
    * \brief Returns true if stream is initialized.
@@ -175,12 +160,20 @@ ThreadSafeQueue<Pose>& pose_queue() {
   }
 
  private:
-  void callback(const sensor_msgs::Image::ConstPtr& rgb,
-                const sensor_msgs::CameraInfo::ConstPtr& info);
+  //void callback(const sensor_msgs::Image::ConstPtr& rgb,
+  //              const sensor_msgs::CameraInfo::ConstPtr& info);
 
-  void tfCallback(const geometry_msgs::TransformStamped::ConstPtr& tf);
+  //void tfCallback(const geometry_msgs::TransformStamped::ConstPtr& tf);
 
-  ros::NodeHandle& nh_;
+  void imageTransformCallback(const geometry_msgs::TransformStamped::ConstPtr& tf, const sensor_msgs::Image::ConstPtr& rgb_msg,
+                                               const sensor_msgs::CameraInfo::ConstPtr& info);
+
+typedef message_filters::sync_policies::ApproximateTime<geometry_msgs::TransformStamped, sensor_msgs::Image, sensor_msgs::CameraInfo>
+        SyncPolicyImageTransform;
+typedef std::shared_ptr<message_filters::Synchronizer<SyncPolicyImageTransform>> SynchronizerImageTransform;
+
+
+    ros::NodeHandle& nh_;
 
   bool inited_;
 
@@ -201,12 +194,15 @@ ThreadSafeQueue<Pose>& pose_queue() {
   tf2_ros::Buffer tf_buffer_;
 
   std::shared_ptr<image_transport::ImageTransport> image_transport_;
-  image_transport::CameraSubscriber cam_sub_;
-  ros::Subscriber transform_sub_;
+  //image_transport::CameraSubscriber cam_sub_;
+  std::shared_ptr<message_filters::Subscriber<sensor_msgs::Image>> image_sub_;
+  std::shared_ptr<message_filters::Subscriber<sensor_msgs::CameraInfo>> cam_info_sub_;
+  std::shared_ptr<message_filters::Subscriber<geometry_msgs::TransformStamped>> transform_sub_;
 
-  //ThreadSafeQueue<Frame> queue_;
-  ThreadSafeQueue<Img> image_queue_;
-  ThreadSafeQueue<Pose> pose_queue_;
+  SynchronizerImageTransform sync_image_transform_;
+
+  ThreadSafeQueue<Frame> queue_;
+
 };
 
 }  // namespace ros_sensor_streams

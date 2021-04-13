@@ -50,12 +50,11 @@ find_package(catkin REQUIRED COMPONENTS ${REQ_CATKIN_PKGS})
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
-set(flame_DIR /root/flame/install/lib/cmake/flame)
 find_package(OpenCV 3 REQUIRED COMPONENTS core highgui imgproc features2d calib3d video)
 find_package(PCL 1.7 REQUIRED COMPONENTS common)
 find_package(Boost 1.54 REQUIRED)
 find_package(Sophus REQUIRED)
-find_package(flame REQUIRED)
+find_package(flame REQUIRED PATHS /root/flame/install/lib/cmake /root/flame/cmake /root/flame/install/lib /root/flame/install)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(EIGEN3 REQUIRED eigen3>=3.2)

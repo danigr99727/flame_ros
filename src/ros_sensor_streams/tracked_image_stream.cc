@@ -51,33 +51,32 @@ TrackedImageStream::TrackedImageStream(const std::string& world_frame_id,
     K_(),
     D_(5),
     tf_buffer_(),
-    tf_listener_(tf_buffer_),
-    //tf_(),
+
     //image_transport_(nullptr),
     //cam_sub_(),
     //transform_sub_(),
     queue_(queue_size),
-    tf_filter_(tf_buffer_, "openni_rgv_frame", 50, nh_),
-    image_sub_(nh_, "/camera/depth/image", 50),
-    cam_info_sub_(nh_, " /camera/depth/camera_info", 50),
-    sync_image_transform_(TrackedImageStream::SyncPolicyImageTransform(100), tf_filter_, image_sub_, cam_info_sub_)
-{
+    image_sub_(nh_, "/camera/rgb/image_color", 50),
+    transform_sub_(nh_, "openni_rgb_frame", 50),
+    tf_filter_(transform_sub_,tf_buffer_, "world", 50, nh_),
+    cam_info_sub_(nh_, "/camera/rgb/camera_info", 50),
+    //transform_sub_(nh_, "/transform_s20", 50),
+
+    sync_image_transform_(TrackedImageStream::SyncPolicyImageTransform(100), tf_filter_, image_sub_, cam_info_sub_){
   // Subscribe to topics.
   //image_transport::ImageTransport it_(nh_);
   //image_transport_.reset(new image_transport::ImageTransport(nh_));
-    //tf_listener_.reset(new tf2_ros::TransformListener(tf_buffer_));
 
   //cam_sub_ = image_transport_->subscribeCamera("image", 50,
   //                                             &TrackedImageStream::callback,
   //                                             this);
-  //transform_sub_.reset(new message_filters::Subscriber<geometry_msgs::TransformStamped>(nh_, "/transform_s20", 50));
-  //tf_filter_.reset(new tf2_ros::MessageFilter<geometry_msgs::TransformStamped>(tf_listener_, "openni_rgb_frame", 50));
-  //  transform_sub_->registerCallback([](const geometry_msgs::TransformStamped::ConstPtr& tf){std::cout<<"got transform"<<std::endl;});
-  //  image_sub_->registerCallback([](const sensor_msgs::Image::ConstPtr& rgb_msg){std::cout<<"got image"<<std::endl;});
-  //  cam_info_sub_->registerCallback([](const sensor_msgs::CameraInfo::ConstPtr& info){std::cout<<"got cam_info"<<std::endl;});
 
-  //sync_image_transform_.reset(new message_filters::Synchronizer<TrackedImageStream::SyncPolicyImageTransform>(
-  //          TrackedImageStream::SyncPolicyImageTransform(100), tf_filter_, *image_sub_, *cam_info_sub_));
+    //openni_rgb_frame
+  tf_filter_.registerCallback([](const geometry_msgs::TransformStamped::ConstPtr& tf){std::cout<<"got transform"<<std::endl;});
+  transform_sub_.registerCallback([](const geometry_msgs::TransformStamped::ConstPtr& tf){std::cout<<"got transform sub"<<std::endl;});
+  image_sub_.registerCallback([](const sensor_msgs::Image::ConstPtr& rgb_msg){std::cout<<"got image"<<std::endl;});
+  cam_info_sub_.registerCallback([](const sensor_msgs::CameraInfo::ConstPtr& info){std::cout<<"got cam_info"<<std::endl;});
+
   sync_image_transform_.registerCallback(boost::bind(&TrackedImageStream::imageTransformCallback, this, _1, _2, _3));
 
   // Set up tf.

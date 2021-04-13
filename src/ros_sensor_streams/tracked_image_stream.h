@@ -189,8 +189,8 @@ typedef message_filters::Synchronizer<SyncPolicyImageTransform> SynchronizerImag
   Eigen::Matrix3f K_; // Camera intrinsics.
   Eigen::VectorXf D_; // Distortion params: k1, k2, p1, p2, k3.
 
-    tf2_ros::TransformListener tf_listener_;
-    tf2_ros::Buffer tf_buffer_;
+  std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
+  tf2_ros::Buffer tf_buffer_;
     tf2_ros::MessageFilter<geometry_msgs::TransformStamped> tf_filter_;
 
   //std::shared_ptr<image_transport::ImageTransport> image_transport_;

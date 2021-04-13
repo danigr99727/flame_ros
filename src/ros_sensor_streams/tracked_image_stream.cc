@@ -37,63 +37,6 @@ namespace ros_sensor_streams {
 
 TrackedImageStream::TrackedImageStream(const std::string& world_frame_id,
                                        ros::NodeHandle& nh,
-                                       const Eigen::Matrix3f& K,
-                                       const Eigen::VectorXf& D,
-                                       bool undistort,
-                                       int resize_factor,
-                                       int queue_size) :
-    nh_(nh),
-    inited_(false),
-    use_external_cal_(true),
-    resize_factor_(resize_factor),
-    undistort_(undistort),
-    world_frame_id_(world_frame_id),
-    live_frame_id_(),
-    width_(0),
-    height_(0),
-    K_(K),
-    D_(D),
-    tf_listener_(nullptr),
-    tf_buffer_(),
-    image_transport_(nullptr),
-    //cam_sub_(),
-    //transform_sub_(),
-    queue_(queue_size){
-  // Double check intrinsics matrix.
-  if (K_(0, 0) <= 0) {
-    ROS_ERROR("Camera intrinsics matrix is probably invalid!\n");
-    ROS_ERROR_STREAM("K = " << std::endl << K_);
-    return;
-  }
-
-  // Subscribe to topics.
-  image_transport::ImageTransport it_(nh_);
-  image_transport_.reset(new image_transport::ImageTransport(nh_));
-
-  //cam_sub_ = image_transport_->subscribeCamera("image", 10,
-  //                                             &TrackedImageStream::callback,
-  //                                             this);
-
-  image_sub_.reset(new message_filters::Subscriber<sensor_msgs::Image>(nh_, "/s20cam_wide/image_rect", 50));
-  cam_info_sub_.reset(new message_filters::Subscriber<sensor_msgs::CameraInfo>(nh_, "/s20cam_wide/camera_info", 50));
-  transform_sub_.reset(new message_filters::Subscriber<geometry_msgs::TransformStamped>(nh_, "/transform_s20", 50));
-
-  //transform_sub_->registerCallback([](const geometry_msgs::TransformStamped::ConstPtr& tf){std::cout<<"got transform"<<std::endl;});
-  //  image_sub_->registerCallback([](const sensor_msgs::Image::ConstPtr& rgb_msg){std::cout<<"got image"<<std::endl;});
-  //  cam_info_sub_->registerCallback([](const sensor_msgs::CameraInfo::ConstPtr& info){std::cout<<"got cam_info"<<std::endl;});
-
-  sync_image_transform_.reset(new message_filters::Synchronizer<TrackedImageStream::SyncPolicyImageTransform>(
-            TrackedImageStream::SyncPolicyImageTransform(100), *transform_sub_, *image_sub_, *cam_info_sub_));
-  sync_image_transform_->registerCallback(boost::bind(&TrackedImageStream::imageTransformCallback, this, _1, _2, _3));
-
-    // Set up tf.
-  tf_listener_.reset(new tf2_ros::TransformListener(tf_buffer_));
-
-  return;
-}
-
-TrackedImageStream::TrackedImageStream(const std::string& world_frame_id,
-                                       ros::NodeHandle& nh,
                                        int queue_size) :
     nh_(nh),
     inited_(false),
@@ -108,28 +51,32 @@ TrackedImageStream::TrackedImageStream(const std::string& world_frame_id,
     D_(5),
     tf_listener_(nullptr),
     tf_buffer_(),
-    image_transport_(nullptr),
+    //image_transport_(nullptr),
     //cam_sub_(),
     //transform_sub_(),
-    queue_(queue_size) {
+    queue_(queue_size),
+    image_sub_(nh_, "/camera/rgb/image_color", 50),
+    transform_sub_(nh_, "openni_rgb_frame", 50),
+    tf_filter_(transform_sub_,tf_buffer_, "world", 50, nh_),
+    cam_info_sub_(nh_, "/camera/rgb/camera_info", 50),
+    //transform_sub_(nh_, "/transform_s20", 50),
+
+    sync_image_transform_(TrackedImageStream::SyncPolicyImageTransform(100), tf_filter_, image_sub_, cam_info_sub_){
   // Subscribe to topics.
-  image_transport::ImageTransport it_(nh_);
-  image_transport_.reset(new image_transport::ImageTransport(nh_));
+  //image_transport::ImageTransport it_(nh_);
+  //image_transport_.reset(new image_transport::ImageTransport(nh_));
 
   //cam_sub_ = image_transport_->subscribeCamera("image", 50,
   //                                             &TrackedImageStream::callback,
   //                                             this);
-  image_sub_.reset(new message_filters::Subscriber<sensor_msgs::Image>(nh_, "/s20cam_wide/image_rect", 50));
-  cam_info_sub_.reset(new message_filters::Subscriber<sensor_msgs::CameraInfo>(nh_, "/s20cam_wide/camera_info", 50));
-  transform_sub_.reset(new message_filters::Subscriber<geometry_msgs::TransformStamped>(nh_, "/transform_s20", 50));
 
-  //  transform_sub_->registerCallback([](const geometry_msgs::TransformStamped::ConstPtr& tf){std::cout<<"got transform"<<std::endl;});
-  //  image_sub_->registerCallback([](const sensor_msgs::Image::ConstPtr& rgb_msg){std::cout<<"got image"<<std::endl;});
-  //  cam_info_sub_->registerCallback([](const sensor_msgs::CameraInfo::ConstPtr& info){std::cout<<"got cam_info"<<std::endl;});
+    //openni_rgb_frame
+  tf_filter_.registerCallback([](const geometry_msgs::TransformStamped::ConstPtr& tf){std::cout<<"got transform"<<std::endl;});
+  transform_sub_.registerCallback([](const geometry_msgs::TransformStamped::ConstPtr& tf){std::cout<<"got transform sub"<<std::endl;});
+  image_sub_.registerCallback([](const sensor_msgs::Image::ConstPtr& rgb_msg){std::cout<<"got image"<<std::endl;});
+  cam_info_sub_.registerCallback([](const sensor_msgs::CameraInfo::ConstPtr& info){std::cout<<"got cam_info"<<std::endl;});
 
-  sync_image_transform_.reset(new message_filters::Synchronizer<TrackedImageStream::SyncPolicyImageTransform>(
-            TrackedImageStream::SyncPolicyImageTransform(100), *transform_sub_, *image_sub_, *cam_info_sub_));
-  sync_image_transform_->registerCallback(boost::bind(&TrackedImageStream::imageTransformCallback, this, _1, _2, _3));
+  sync_image_transform_.registerCallback(boost::bind(&TrackedImageStream::imageTransformCallback, this, _1, _2, _3));
 
   // Set up tf.
   tf_listener_.reset(new tf2_ros::TransformListener(tf_buffer_));

@@ -36,6 +36,7 @@
 #include <message_filters/time_synchronizer.h>
 
 #include <tf2_ros/transform_listener.h>
+#include "tf2_ros/message_filter.h"
 
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/CameraInfo.h>
@@ -170,7 +171,7 @@ class TrackedImageStream final  {
 
 typedef message_filters::sync_policies::ApproximateTime<geometry_msgs::TransformStamped, sensor_msgs::Image, sensor_msgs::CameraInfo>
         SyncPolicyImageTransform;
-typedef std::shared_ptr<message_filters::Synchronizer<SyncPolicyImageTransform>> SynchronizerImageTransform;
+typedef message_filters::Synchronizer<SyncPolicyImageTransform> SynchronizerImageTransform;
 
 
     ros::NodeHandle& nh_;
@@ -192,12 +193,13 @@ typedef std::shared_ptr<message_filters::Synchronizer<SyncPolicyImageTransform>>
 
   std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
   tf2_ros::Buffer tf_buffer_;
+    tf2_ros::MessageFilter<geometry_msgs::TransformStamped> tf_filter_;
 
-  std::shared_ptr<image_transport::ImageTransport> image_transport_;
+  //std::shared_ptr<image_transport::ImageTransport> image_transport_;
   //image_transport::CameraSubscriber cam_sub_;
-  std::shared_ptr<message_filters::Subscriber<sensor_msgs::Image>> image_sub_;
-  std::shared_ptr<message_filters::Subscriber<sensor_msgs::CameraInfo>> cam_info_sub_;
-  std::shared_ptr<message_filters::Subscriber<geometry_msgs::TransformStamped>> transform_sub_;
+  message_filters::Subscriber<sensor_msgs::Image> image_sub_;
+  message_filters::Subscriber<sensor_msgs::CameraInfo> cam_info_sub_;
+  message_filters::Subscriber<geometry_msgs::TransformStamped> transform_sub_;
 
   SynchronizerImageTransform sync_image_transform_;
 

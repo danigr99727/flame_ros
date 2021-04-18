@@ -339,8 +339,6 @@ void ASLRGBDOfflineStream::get(uint32_t* id, double* time,
 
     Eigen::Quaternion<double> quata(-0.5, 0.5, -0.5, 0.5);
 
-
-
         geometry_msgs::TransformStamped tf22;
         tf22.header.stamp.fromSec(*time);
         tf22.header.frame_id =  "world";

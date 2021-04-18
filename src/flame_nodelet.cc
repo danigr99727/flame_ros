@@ -508,7 +508,6 @@ class FlameNodelet : public nodelet::Nodelet {
    * \brief Main processing loop.
    */
   void main() {
-      std::cout<<"hereA"<<std::endl;
 
       // Wait until input is initialized.
     NODELET_INFO_COND(!params_.debug_quiet,
@@ -625,13 +624,13 @@ class FlameNodelet : public nodelet::Nodelet {
   }
 
   void processFrame(const uint32_t img_id, const double time,
-                    const Sophus::SE3f& pose, const cv::Mat3b& rgb) {
+                    const Sophus::SE3f& pose, const cv::Mat1b& img_gray) {
     stats_.tick("process_frame");
 
     /*==================== Process image ====================*/
     // Convert to grayscale.
-    cv::Mat1b img_gray;
-    cv::cvtColor(rgb, img_gray, cv::COLOR_RGB2GRAY);
+    //cv::Mat1b img_gray;
+    //cv::cvtColor(rgb, img_gray, cv::COLOR_RGB2GRAY);
 
     bool is_poseframe = ((static_cast<int>(img_id) -  first_pf_id_) %
                          poseframe_subsample_factor_) == 0;
@@ -679,7 +678,7 @@ class FlameNodelet : public nodelet::Nodelet {
       sensor_->getInverseDepthMesh(&vtx, &idepths, &normals, &triangles,
                                    &tri_validity, &edges);
       publishDepthMesh(mesh_pub_, camera_frame_id_, time, Kinv_, vtx,
-                       idepths, normals, triangles, tri_validity, rgb);
+                       idepths, normals, triangles, tri_validity, img_gray);
     }
 
     if (publish_idepthmap_ || publish_depthmap_ || publish_cloud_) {

@@ -27,15 +27,13 @@
 
 #include <ros/ros.h>
 
-//#include <image_transport/image_transport.h>
-//#include <image_transport/camera_subscriber.h>
+
 #include <message_filters/subscriber.h>
 #include <message_filters/sync_policies/exact_time.h>
 #include <message_filters/sync_policies/approximate_time.h>
 
 #include <message_filters/time_synchronizer.h>
-//#include "tf/transform_listener.h"
-//#include "tf/message_filter.h"
+
 
 #include <tf2_ros/transform_listener.h>
 #include "tf2_ros/message_filter.h"
@@ -69,7 +67,7 @@ class TrackedImageStream final  {
     double time; // Timestamp.
     Eigen::Quaternionf quat; // Orientation as quaternion.
     Eigen::Vector3f trans; // Translsation.
-    cv::Mat3b img; // RGB image.
+    cv::Mat1b img; // gray image.
   };
 
   /**
@@ -189,9 +187,9 @@ typedef message_filters::Synchronizer<SyncPolicyImageTransform> SynchronizerImag
   Eigen::Matrix3f K_; // Camera intrinsics.
   Eigen::VectorXf D_; // Distortion params: k1, k2, p1, p2, k3.
 
-  std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
-  tf2_ros::Buffer tf_buffer_;
-    tf2_ros::MessageFilter<geometry_msgs::TransformStamped> tf_filter_;
+  //std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
+  //tf2_ros::Buffer tf_buffer_;
+  //tf2_ros::MessageFilter<geometry_msgs::TransformStamped> tf_filter_;
 
   //std::shared_ptr<image_transport::ImageTransport> image_transport_;
   //image_transport::CameraSubscriber cam_sub_;

@@ -13,7 +13,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License along
- * with this program; if not, see <http://www.gnu.org/licenses/>.
+ * with this program; if not, see <http://www.gnu.orggray/licenses/>.
  *
  * @file utils.cc
  * @author W. Nicholas Greene
@@ -169,7 +169,7 @@ void publishDepthMesh(const ros::Publisher& mesh_pub,
                       const std::vector<Eigen::Vector3f>& normals,
                       const std::vector<flame::Triangle>& triangles,
                       const std::vector<bool>& tri_validity,
-                      const cv::Mat3b& rgb) {
+                      const cv::Mat1b& gray_img) {
   pcl_msgs::PolygonMesh::Ptr msg(new pcl_msgs::PolygonMesh());
   msg->header.stamp.fromSec(time);
   msg->header.frame_id = frame_id;
@@ -196,8 +196,8 @@ void publishDepthMesh(const ros::Publisher& mesh_pub,
       cloud.points[ii].normal_z = normals[ii](2);
 
       // OpenGL textures range from 0 to 1.
-      cloud.points[ii].u = vertices[ii].x / (rgb.cols - 1);
-      cloud.points[ii].v = vertices[ii].y / (rgb.rows - 1);
+      cloud.points[ii].u = vertices[ii].x / (gray_img.cols - 1);
+      cloud.points[ii].v = vertices[ii].y / (gray_img.rows - 1);
     } else {
       // Add invalid value to skip this point. Note that the initial value
       // is (0, 0, 0), so you must manually invalidate the point.

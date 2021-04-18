@@ -50,19 +50,18 @@ TrackedImageStream::TrackedImageStream(const std::string& world_frame_id,
     height_(0),
     K_(),
     D_(5),
-    tf_buffer_(),
+    //tf_buffer_(),/ca
 
     //image_transport_(nullptr),
     //cam_sub_(),
     //transform_sub_(),
     queue_(queue_size),
-    image_sub_(nh_, "/camera/rgb/image_color", 50),
-    transform_sub_(nh_, "openni_rgb_frame", 50),
-    tf_filter_(transform_sub_,tf_buffer_, "world", 50, nh_),
+    image_sub_(nh_, "/camera/rgb/image_rect", 50),
+    //tf_filter_(transform_sub_,tf_buffer_, "world", 50, nh_),
     cam_info_sub_(nh_, "/camera/rgb/camera_info", 50),
-    //transform_sub_(nh_, "/transform_s20", 50),
+    transform_sub_(nh_, "/transform_rgb_frame", 50),
 
-    sync_image_transform_(TrackedImageStream::SyncPolicyImageTransform(100), tf_filter_, image_sub_, cam_info_sub_){
+    sync_image_transform_(TrackedImageStream::SyncPolicyImageTransform(100), transform_sub_, image_sub_, cam_info_sub_){
   // Subscribe to topics.
   //image_transport::ImageTransport it_(nh_);
   //image_transport_.reset(new image_transport::ImageTransport(nh_));
@@ -72,14 +71,12 @@ TrackedImageStream::TrackedImageStream(const std::string& world_frame_id,
   //                                             this);
 
     //openni_rgb_frame
-  tf_filter_.registerCallback([](const geometry_msgs::TransformStamped::ConstPtr& tf){std::cout<<"got transform"<<std::endl;});
-  transform_sub_.registerCallback([](const geometry_msgs::TransformStamped::ConstPtr& tf){std::cout<<"got transform sub"<<std::endl;});
-  image_sub_.registerCallback([](const sensor_msgs::Image::ConstPtr& rgb_msg){std::cout<<"got image"<<std::endl;});
-  cam_info_sub_.registerCallback([](const sensor_msgs::CameraInfo::ConstPtr& info){std::cout<<"got cam_info"<<std::endl;});
+  //tf_filter_.registerCallback([](const geometry_msgs::TransformStamped::ConstPtr& tf){std::cout<<"got transform"<<std::endl;});
+  //transform_sub_.registerCallback([](const geometry_msgs::TransformStamped::ConstPtr& tf){std::cout<<"got transform sub"<<std::endl;});
+  //image_sub_.registerCallback([](const sensor_msgs::Image::ConstPtr& rgb_msg){std::cout<<"got image"<<std::endl;});
+  //cam_info_sub_.registerCallback([](const sensor_msgs::CameraInfo::ConstPtr& info){std::cout<<"got cam_info"<<std::endl;});
 
   sync_image_transform_.registerCallback(boost::bind(&TrackedImageStream::imageTransformCallback, this, _1, _2, _3));
-
-  // Set up tf.
 
   return;
 }
@@ -177,25 +174,24 @@ void TrackedImageStream::tfCallback(const geometry_msgs::TransformStamped::Const
 void TrackedImageStream::imageTransformCallback(const geometry_msgs::TransformStamped::ConstPtr& tf, const sensor_msgs::Image::ConstPtr& rgb_msg,
                                                 const sensor_msgs::CameraInfo::ConstPtr& info) {
     ROS_DEBUG("Received data!");
-    //std::cout<<"callback_CALLED"<<std::endl;
     // Grab rgb data.
-    cv::Mat3b rgb = cv_bridge::toCvCopy(rgb_msg, "bgr8")->image;
+    cv::Mat1b gray_img = cv_bridge::toCvCopy(rgb_msg, "mono8")->image;
 
-    assert(rgb.isContinuous());
+    assert(gray_img.isContinuous());
 
     if (resize_factor_ != 1) {
-        cv::Mat3b resized_rgb(static_cast<float>(rgb.rows) / resize_factor_,
-                              static_cast<float>(rgb.cols) / resize_factor_);
-        cv::resize(rgb, resized_rgb, resized_rgb.size());
-        rgb = resized_rgb;
+        cv::Mat1b resized_rgb(static_cast<float>(gray_img.rows) / resize_factor_,
+                              static_cast<float>(gray_img.cols) / resize_factor_);
+        cv::resize(gray_img, resized_rgb, resized_rgb.size());
+        gray_img = resized_rgb;
     }
 
     if (!inited_) {
         live_frame_id_ = rgb_msg->header.frame_id;
 
         // Set calibration.
-        width_ = rgb.cols;
-        height_ = rgb.rows;
+        width_ = gray_img.cols;
+        height_ = gray_img.rows;
 
         if (!use_external_cal_) {
             for (int ii = 0; ii < 3; ++ii) {
@@ -220,15 +216,6 @@ void TrackedImageStream::imageTransformCallback(const geometry_msgs::TransformSt
         ROS_DEBUG("Set camera calibration!");
     }
 
-    if (undistort_) {
-        cv::Mat1f Kcv, Dcv;
-        cv::eigen2cv(K_, Kcv);
-        cv::eigen2cv(D_, Dcv);
-        cv::Mat3b rgb_undistorted;
-        cv::undistort(rgb, rgb_undistorted, Kcv, Dcv);
-        rgb = rgb_undistorted;
-    }
-
     Sophus::SE3f pose;
     tfToSophusSE3<float>(tf->transform, &pose);
 
@@ -237,7 +224,7 @@ void TrackedImageStream::imageTransformCallback(const geometry_msgs::TransformSt
     FRAME.time = tf->header.stamp.toSec();
     FRAME.quat = pose.unit_quaternion();
     FRAME.trans = pose.translation();
-    FRAME.img = rgb;
+    FRAME.img = gray_img;
 
     queue_.push(FRAME);
 

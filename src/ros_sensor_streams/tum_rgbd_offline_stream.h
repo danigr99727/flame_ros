@@ -197,6 +197,7 @@ class TUMRGBDOfflineStream final  {
   bool publish_;
 
   // Publishers.
+  ros::Publisher tf_actual_pub_;
   tf2_ros::TransformBroadcaster tf_pub_;
   image_transport::ImageTransport it_;
   image_transport::CameraPublisher rgb_pub_;

@@ -1,6 +1,7 @@
 <!-- Launch file for running Flame from a dataset of images. -->
 <launch>
   <arg name="load_params" default="true" />
+      <arg name="cam_name" default="camera/rgb" />
   <arg name="param_file" default="flame_offline_tum.yaml" />
 
   <arg name="bag_data" default="false" />
@@ -14,30 +15,22 @@
         output="screen">
     <rosparam command="load" if="$(arg load_params)"
               file="$(find flame_ros)/cfg/$(arg param_file)"/>
+          <remap from="/camera/rgb/image_rect_color" to="/$(arg cam_name)/image_raw" />
   </node>
 
-  <!-- Bag the outputs. -->
-  <node if="$(arg bag_data)"
-        pkg="rosbag" type="record" name="flame_bagger"
-        output="screen"
-        args="/flame/mesh
-              /flame/stats
-              /flame/nodelet_stats
-              /flame/idepth_registered/camera_info
-              /flame/idepth_registered/image_rect
-              /flame/depth_registered/camera_info
-              /flame/depth_registered/image_rect
-              /flame/depth_registered_raw/camera_info
-              /flame/depth_registered_raw/image_rect
-              /flame/debug/wireframe
-              /flame/debug/features
-              /flame/debug/detections
-              /flame/debug/matches
-              /flame/debug/photo_error
-              /flame/debug/normals
-              /flame/debug/idepthmap
-              /tf
-              /tf_static
-              -o flame">
+      <node name="rvizfiestavisualisation" pkg="rviz" type="rviz" output="log" args="-d $(find my_pipeline)/cfg/flame.rviz" />
+
+ <node pkg="image_proc" type="image_proc" name="creative_image_proc"
+        ns="$(arg cam_name)" >
   </node>
+
+    <node pkg="rosbag" type="record" name="rosbag_record_cam"
+           args="record -o /$(arg cam_name)/image_raw /$(arg cam_name)/image_rect
+           /$(arg cam_name)/camera_info
+           /transform_rgb_frame
+-O TUM_recording.bag"
+
+        />
+
+
 </launch>

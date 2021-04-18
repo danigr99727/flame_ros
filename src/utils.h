@@ -94,7 +94,7 @@ void publishDepthMesh(const ros::Publisher& mesh_pub,
                       const std::vector<Eigen::Vector3f>& normals,
                       const std::vector<flame::Triangle>& triangles,
                       const std::vector<bool>& tri_validity,
-                      const cv::Mat3b& rgb);
+                      const cv::Mat1b& gray_img);
 
 /**
  * @brief Publish depthmap.

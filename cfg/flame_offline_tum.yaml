@@ -1,5 +1,5 @@
 # flame_offline_tum parameters.
-input_file: /root/tum/rgbd_dataset_freiburg3_structure_texture_far/groundtruth_rgb.txt
+input_file: /root/tum/rgbd_dataset_freiburg2_pioneer_slam/groundtruth_rgb_depth.txt
 calib_file: /root/fiesta_ws/src/flame_ros/cfg/kinect.yaml
 input_frame: RDF_IN_FLU
 depth_scale_factor: 5000.0
@@ -19,7 +19,7 @@ output:
   quiet: true # Turn off terminal output.
   mesh: true # Publish mesh as pcl_msgs/PolygonMesh.
   idepthmap: false # Publish idepthmap as sensor_msgs/Image.
-  depthmap: false # Publish depthmap as sensor_msgs/Image.
+  depthmap: true # Publish depthmap as sensor_msgs/Image.
   cloud: false # Publish pointcloud sensor_msgs/PointCloud2. Prefer mesh or depthmap (in that order).
   features: false # Publish raw features points as sensors_msgs/Image.
   stats: true # Publish statistics message.

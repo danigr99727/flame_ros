@@ -225,26 +225,6 @@ void TUMRGBDOfflineStream::get(uint32_t* id, double* time,
     tff.transform.translation.z = (*trans)(2);
     tf_pub_.sendTransform(tff);
       tf_actual_pub_.publish(tff);
-   /*   tf::StampedTransform transform;
-      Eigen::Quaternion<double> quata(-0.5, 0.5, -0.5, 0.5);
-
-      geometry_msgs::TransformStamped tf22;
-      tf22.header.stamp.fromSec(*time);
-      tf22.header.frame_id =  "world";
-      tf22.child_frame_id = camera_frame_id_;
-      tf22.transform.rotation.w = quata.w()*quat->w() - quata.x()*quat->x() - quata.y()*quat->y() - quata.z()*quat->z();
-      tf22.transform.rotation.x = quata.w()*quat->x() + quata.x()*quat->w() + quata.y()*quat->z() - quata.z()*quat->y();
-      tf22.transform.rotation.y = quata.w()*quat->y() - quata.x()*quat->z() + quata.y()*quat->w() + quata.z()*quat->x();
-      tf22.transform.rotation.z = quata.w()*quat->z() + quata.x()*quat->y() - quata.y()*quat->x() + quata.z()*quat->w();
-      // tf22.transform.rotation.w = quat->w()*-0.5 - quat->x()*0.5 - quat->y()*-0.5 - quat->z()*0.5;
-      //   tf22.transform.rotation.x = quat->w()*0.5 + quat->x()*-0.5 - quat->y()*0.5 + quat->z()*-0.5;
-      //  tf22.transform.rotation.y = quat->w()*-0.5 + quat->x()*0.5 + quat->y()*-0.5 - quat->z()*0.5;
-      // tf22.transform.rotation.z = quat->w()*0.5 - quat->x()*-0.5 + quat->y()*0.5 + quat->z()*-0.5;
-// quaternion multiplication from https://stackoverflow.com/questions/19956555/how-to-multiply-two-quaternions (with quat being quaternion b)
-      tf22.transform.translation.x = transform.getOrigin().getX();
-      tf22.transform.translation.y = transform.getOrigin().getY();
-      tf22.transform.translation.z = transform.getOrigin().getZ();
-      tf_actual_pub_.publish(tf22);*/
 
     // Publish messages over ROS.
     std_msgs::Header header;

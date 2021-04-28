@@ -96,6 +96,7 @@
 
     <node pkg="rosbag" type="record" name="rosbag_record_cam"
            args="record -o /$(arg cam_name)/image_raw /$(arg cam_name)/image_rect
+           /$(arg cam_name)/image_rect_color
            /camera/depth_registered/image_rect
            /tf
            /$(arg cam_name)/camera_info

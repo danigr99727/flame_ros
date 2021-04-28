@@ -1,5 +1,5 @@
 # flame_offline_tum parameters.
-input_file: /root/tum/rgbd_dataset_freiburg2_pioneer_slam/groundtruth_rgb_depth.txt
+input_file: /root/tum/rgbd_dataset_freiburg3_large_cabinet/groundtruth_rgb_depth.txt
 calib_file: /root/fiesta_ws/src/flame_ros/cfg/kinect.yaml
 input_frame: RDF_IN_FLU
 depth_scale_factor: 5000.0
@@ -13,7 +13,7 @@ input:
 
   # Target rate at which to process images. This allows ROS to clear the
   # callback queues so that things get bagged.
-  rate: 6
+  rate: 4
 
 output:
   quiet: true # Turn off terminal output.

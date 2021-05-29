@@ -54,7 +54,7 @@ find_package(OpenCV 3 REQUIRED COMPONENTS core highgui imgproc features2d calib3
 find_package(PCL 1.7 REQUIRED COMPONENTS common)
 find_package(Boost 1.54 REQUIRED)
 find_package(Sophus REQUIRED)
-find_package(flame REQUIRED PATHS /root/fiesta_ws/third_party/flame/install/lib/cmake /root/fiesta_ws/third_party/flame/cmake /root/fiesta_ws/third_party/flame/install/lib /root/fiesta_ws/third_party/flame/install)
+find_package(flame REQUIRED PATHS /root/monocular_exploration/third_party/flame/install/lib/cmake /root/monocular_exploration/third_party/flame/cmake /root/monocular_exploration/third_party/flame/install/lib /root/monocular_exploration/third_party/flame/install)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(EIGEN3 REQUIRED eigen3>=3.2)

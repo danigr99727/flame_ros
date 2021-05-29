@@ -42,13 +42,14 @@
 #include <sensor_msgs/CameraInfo.h>
 
 #include <geometry_msgs/TransformStamped.h>
-
+#include <nav_msgs/Odometry.h>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
 #include <opencv2/core/core.hpp>
 
 #include <ros_sensor_streams/thread_safe_queue.h>
+#include <sophus/se3.hpp>
 
 namespace ros_sensor_streams {
 
@@ -137,10 +138,10 @@ class TrackedImageStream final  {
    * @brief Return the distortion params.
    *
    * k1, k2, p1, p2, k3
-   */
+
   const Eigen::VectorXf& D() {
     return D_;
-  }
+  }*/
 
   /**
    * \brief Return id of the world frame.
@@ -157,18 +158,20 @@ class TrackedImageStream final  {
   }
 
  private:
-  //void callback(const sensor_msgs::Image::ConstPtr& rgb,
-  //              const sensor_msgs::CameraInfo::ConstPtr& info);
 
-  //void tfCallback(const geometry_msgs::TransformStamped::ConstPtr& tf);
+  void imageTransformCallback(const geometry_msgs::TransformStamped::ConstPtr& tf, const sensor_msgs::Image::ConstPtr& rgb_msg);
 
-  void imageTransformCallback(const geometry_msgs::TransformStamped::ConstPtr& tf, const sensor_msgs::Image::ConstPtr& rgb_msg,
-                                               const sensor_msgs::CameraInfo::ConstPtr& info);
-
-typedef message_filters::sync_policies::ApproximateTime<geometry_msgs::TransformStamped, sensor_msgs::Image, sensor_msgs::CameraInfo>
+typedef message_filters::sync_policies::ApproximateTime<geometry_msgs::TransformStamped, sensor_msgs::Image>
         SyncPolicyImageTransform;
 typedef message_filters::Synchronizer<SyncPolicyImageTransform> SynchronizerImageTransform;
 
+    void imageOdomCallback(const nav_msgs::Odometry::ConstPtr& odom, const sensor_msgs::Image::ConstPtr& rgb_msg);
+
+    typedef message_filters::sync_policies::ApproximateTime<nav_msgs::Odometry, sensor_msgs::Image>
+            SyncPolicyImageOdom;
+    typedef message_filters::Synchronizer<SyncPolicyImageOdom> SynchronizerImageOdom;
+
+    void processPoseImage(const sensor_msgs::Image::ConstPtr& rgb_msg);
 
     ros::NodeHandle& nh_;
 
@@ -185,19 +188,19 @@ typedef message_filters::Synchronizer<SyncPolicyImageTransform> SynchronizerImag
   int width_;
   int height_;
   Eigen::Matrix3f K_; // Camera intrinsics.
-  Eigen::VectorXf D_; // Distortion params: k1, k2, p1, p2, k3.
 
-  //std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
-  //tf2_ros::Buffer tf_buffer_;
-  //tf2_ros::MessageFilter<geometry_msgs::TransformStamped> tf_filter_;
+  Sophus::SE3f pose_;
 
-  //std::shared_ptr<image_transport::ImageTransport> image_transport_;
-  //image_transport::CameraSubscriber cam_sub_;
+  sensor_msgs::CameraInfo::ConstPtr info_;
   message_filters::Subscriber<sensor_msgs::Image> image_sub_;
   message_filters::Subscriber<sensor_msgs::CameraInfo> cam_info_sub_;
   message_filters::Subscriber<geometry_msgs::TransformStamped> transform_sub_;
+  message_filters::Subscriber<nav_msgs::Odometry> odom_sub_;
 
   SynchronizerImageTransform sync_image_transform_;
+  SynchronizerImageOdom sync_image_odom_;
+
+  ros::Publisher received_pub_;
 
   ThreadSafeQueue<Frame> queue_;
 

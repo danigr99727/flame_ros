@@ -644,7 +644,7 @@ class FlameOfflineTUM final {
 
       if (publish_idepthmap_) {
         publishDepthMap(idepth_pub_, camera_frame_id_, time, input_->K(),
-                        idepthmap);
+                        idepthmap, 0);
       }
 
       // Convert to depths.
@@ -662,7 +662,7 @@ class FlameOfflineTUM final {
 
       if (publish_depthmap_) {
         publishDepthMap(depth_pub_, camera_frame_id_, time, input_->K(),
-                        depth_est);
+                        depth_est, 0);
       }
 
       if (publish_cloud_) {
@@ -699,7 +699,7 @@ class FlameOfflineTUM final {
       }
 
       publishDepthMap(features_pub_, camera_frame_id_, time, input_->K(),
-                      depth_raw);
+                      depth_raw, 0);
     }
 
     if (publish_stats_) {

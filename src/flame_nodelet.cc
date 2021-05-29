@@ -102,7 +102,6 @@ class FlameNodelet : public nodelet::Nodelet {
  public:
   // // Convenience alias.
   using Frame = ros_sensor_streams::TrackedImageStream::Frame;
-
 #ifdef FLAME_WITH_FLA
   enum Status {
     GOOD = 0,
@@ -155,7 +154,7 @@ class FlameNodelet : public nodelet::Nodelet {
     num_imgs_ = 0;
 
     // Setup tf.
-    tf_listener_ = std::make_shared<tf2_ros::TransformListener>(tf_buffer_);
+    //tf_listener_ = std::make_shared<tf2_ros::TransformListener>(tf_buffer_);
 
     /*==================== Input Params ====================*/
     getParamOrFail(pnh, "input/camera_frame_id", &camera_frame_id_);
@@ -354,8 +353,8 @@ class FlameNodelet : public nodelet::Nodelet {
       pfs_inited_ = false;
 
       // Subscribe to poseframe topic.
-      poseframe_sub_ = nh.subscribe("poseframes", 1,
-                                    &FlameNodelet::poseframeCallback, this);
+      /*poseframe_sub_ = nh.subscribe("poseframes", 1,
+                                    &FlameNodelet::poseframeCallback, this);*/
     }
 
     // Set up publishers. For some reason this appears to take a while.
@@ -368,6 +367,7 @@ class FlameNodelet : public nodelet::Nodelet {
     }
     if (publish_depthmap_) {
       depth_pub_ = it_->advertiseCamera("depth_registered/image_rect", 5);
+      sent_pub_ = nh.advertise<std_msgs::Header>("sent", 15);
     }
     if (publish_features_) {
       features_pub_ = it_->advertiseCamera("depth_registered_raw/image_rect", 5);
@@ -411,7 +411,7 @@ class FlameNodelet : public nodelet::Nodelet {
   /**
    * @brief Callback for receiving poseframe poses.
    */
-  void poseframeCallback(const nav_msgs::Path::ConstPtr& msg) {
+  /*void poseframeCallback(const nav_msgs::Path::ConstPtr& msg) {
     NODELET_INFO_COND(!params_.debug_quiet,
                       "FlameNodelet: Got a poseframe message!\n");
 
@@ -476,7 +476,7 @@ class FlameNodelet : public nodelet::Nodelet {
     }
 
     return;
-  }
+  }*/
 
 #ifdef FLAME_WITH_FLA
   void heartBeat(const ros::TimerEvent&) {
@@ -688,7 +688,7 @@ class FlameNodelet : public nodelet::Nodelet {
       if (publish_idepthmap_) {
         // Publish full idepthmap.
         publishDepthMap(idepth_pub_, camera_frame_id_, time, input_->K(),
-                        sensor_->getInverseDepthMap());
+                        sensor_->getInverseDepthMap(), img_id);
       }
 
       // Convert to depths.
@@ -706,7 +706,10 @@ class FlameNodelet : public nodelet::Nodelet {
 
       if (publish_depthmap_) {
         publishDepthMap(depth_pub_, input_->live_frame_id(), time, input_->K(),
-                        depth_est);
+                        depth_est, img_id);
+        std_msgs::Header header_msg;
+        header_msg.stamp.fromSec(time);
+        sent_pub_.publish(header_msg);
       }
 
       if (publish_cloud_) {
@@ -743,7 +746,7 @@ class FlameNodelet : public nodelet::Nodelet {
       }
 
       publishDepthMap(features_pub_, input_->live_frame_id(), time, input_->K(),
-                      depth_raw);
+                      depth_raw, img_id);
     }
 
     if (publish_stats_) {
@@ -836,8 +839,8 @@ class FlameNodelet : public nodelet::Nodelet {
   int num_imgs_;
 
   // tf stuff.
-  std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
-  tf2_ros::Buffer tf_buffer_;
+  //std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
+  //tf2_ros::Buffer tf_buffer_;
 
   // input params.
   std::string camera_frame_id_; // Frame id of the camera in optical coordinates.
@@ -888,6 +891,7 @@ class FlameNodelet : public nodelet::Nodelet {
   bool publish_stats_;
   ros::Publisher stats_pub_;
   ros::Publisher nodelet_stats_pub_;
+  ros::Publisher sent_pub_;
   int load_integration_factor_;
 
   // Publishes debug images.

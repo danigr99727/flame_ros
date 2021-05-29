@@ -102,7 +102,7 @@ void publishDepthMesh(const ros::Publisher& mesh_pub,
 void publishDepthMap(const image_transport::CameraPublisher& pub,
                      const std::string& frame_id,
                      double time, const Eigen::Matrix3f& K,
-                     const cv::Mat1f& depth_est);
+                     const cv::Mat1f& depth_est, const uint32_t seq);
 
 /**
  * @brief Publish point cloud.

@@ -705,11 +705,8 @@ class FlameNodelet : public nodelet::Nodelet {
       }
 
       if (publish_depthmap_) {
-        publishDepthMap(depth_pub_, input_->live_frame_id(), time, input_->K(),
-                        depth_est, img_id);
-        std_msgs::Header header_msg;
-        header_msg.stamp.fromSec(time);
-        sent_pub_.publish(header_msg);
+        publishDepthMapWithMeasurement(depth_pub_, input_->live_frame_id(), time, input_->K(),
+                        depth_est, img_id, sent_pub_);
       }
 
       if (publish_cloud_) {

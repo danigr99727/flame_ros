@@ -267,10 +267,46 @@ void publishDepthMap(const image_transport::CameraPublisher& pub,
   cinfo->R[8] = 1.0;
 
   cv_bridge::CvImage depth_cvi(header, "32FC1", depth_est);
-
-  pub.publish(depth_cvi.toImageMsg(), cinfo);
-
   return;
+}
+
+void publishDepthMapWithMeasurement(const image_transport::CameraPublisher& pub,
+                     const std::string& frame_id,
+                     double time, const Eigen::Matrix3f& K,
+                     const cv::Mat1f& depth_est, const uint32_t seq, ros::Publisher& sent_pub_) {
+    // Publish depthmap.
+    std_msgs::Header header;
+    header.stamp.fromSec(time);
+    header.frame_id = frame_id;
+    header.seq = seq;
+
+    sensor_msgs::CameraInfo::Ptr cinfo(new sensor_msgs::CameraInfo);
+    cinfo->header = header;
+    cinfo->height = depth_est.rows;
+    cinfo->width = depth_est.cols;
+    cinfo->distortion_model = "plumb_bob";
+    cinfo->D = {0.0, 0.0, 0.0, 0.0, 0.0};
+    for (int ii = 0; ii < 3; ++ii) {
+        for (int jj = 0; jj < 3; ++jj) {
+            cinfo->K[ii*3 + jj] = K(ii, jj);
+            cinfo->P[ii*4 + jj] = K(ii, jj);
+            cinfo->R[ii*3 + jj] = 0.0;
+        }
+    }
+    cinfo->P[3] = 0.0;
+    cinfo->P[7] = 0.0;
+    cinfo->P[11] = 0.0;
+    cinfo->R[0] = 1.0;
+    cinfo->R[4] = 1.0;
+    cinfo->R[8] = 1.0;
+
+    cv_bridge::CvImage depth_cvi(header, "32FC1", depth_est);
+    std_msgs::Header header_msg;
+    header_msg.stamp.fromSec(time);
+    sent_pub_.publish(header_msg);
+    pub.publish(depth_cvi.toImageMsg(), cinfo);
+
+    return;
 }
 
 void publishPointCloud(const ros::Publisher& pub,

@@ -123,15 +123,14 @@ void TrackedImageStream::imageOdomCallback(const nav_msgs::Odometry::ConstPtr& o
     processPoseImage(rgb_msg);
 }
 void TrackedImageStream::imageTransformCallback(const geometry_msgs::TransformStamped::ConstPtr& tf, const sensor_msgs::Image::ConstPtr& rgb_msg){
+    std_msgs::Header header_msg;
+    header_msg.stamp = rgb_msg->header.stamp;
+    received_pub_.publish(header_msg);
     tfToSophusSE3<float>(tf->transform, &pose_);
     processPoseImage(rgb_msg);
 }
 
 void TrackedImageStream::processPoseImage(const sensor_msgs::Image::ConstPtr& rgb_msg) {
-    std_msgs::Header header_msg;
-    header_msg.stamp = rgb_msg->header.stamp;
-    received_pub_.publish(header_msg);
-
     std::cout<<"Received data!"<<std::endl;
     // Grab rgb data.
     cv::Mat1b gray_img = cv_bridge::toCvCopy(rgb_msg, "mono8")->image;

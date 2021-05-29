@@ -104,6 +104,10 @@ void publishDepthMap(const image_transport::CameraPublisher& pub,
                      double time, const Eigen::Matrix3f& K,
                      const cv::Mat1f& depth_est, const uint32_t seq);
 
+void publishDepthMapWithMeasurement(const image_transport::CameraPublisher& pub,
+                    const std::string& frame_id,
+                    double time, const Eigen::Matrix3f& K,
+                    const cv::Mat1f& depth_est, const uint32_t seq, ros::Publisher& sent_pub_);
 /**
  * @brief Publish point cloud.
  */

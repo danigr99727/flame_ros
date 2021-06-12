@@ -175,8 +175,8 @@ void TrackedImageStream::processPoseImage(const sensor_msgs::Image::ConstPtr& rg
     }
 
     Frame FRAME;
-    FRAME.id = rgb_msg->header.seq;
-
+    static int id = 0;
+    FRAME.id = id++;
     FRAME.time = rgb_msg->header.stamp.toSec();
     FRAME.quat = pose_.unit_quaternion();
     FRAME.trans = pose_.translation();
